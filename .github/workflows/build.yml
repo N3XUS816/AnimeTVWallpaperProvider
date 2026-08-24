@@ -1,1 +1,37 @@
+name: Build Anime TV Wallpaper Provider
 
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Clone Projectivy provider template
+        run: git clone --depth 1 https://github.com/spocky/projectivy-plugin-wallpaper-provider.git template
+
+      - name: Copy Anime TV provider
+        run: |
+          rm -rf template/sample/src/main/java/tv/projectivy/plugin/wallpaperprovider/sample/*
+          mkdir -p template/sample/src/main/java/tv/projectivy/plugin/wallpaperprovider/sample
+          cp provider/WallpaperProviderService.kt template/sample/src/main/java/tv/projectivy/plugin/wallpaperprovider/sample/
+          cp provider/SettingsActivity.kt template/sample/src/main/java/tv/projectivy/plugin/wallpaperprovider/sample/
+          cp provider/AndroidManifest.xml template/sample/src/main/
+          cp provider/strings.xml template/sample/src/main/res/values/strings.xml
+          cp provider/integers.xml template/sample/src/main/res/values/integers.xml
+
+      - name: Build APK
+        working-directory: template
+        run: ./gradlew :sample:assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AnimeTVWallpaperProvider
+          path: template/sample/build/outputs/apk/debug/*.apk
