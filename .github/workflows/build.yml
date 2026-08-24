@@ -28,7 +28,9 @@ jobs:
 
       - name: Build APK
         working-directory: template
-        run: ./gradlew :sample:assembleDebug --no-daemon
+        run: |
+          chmod +x gradlew
+          ./gradlew :sample:assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
