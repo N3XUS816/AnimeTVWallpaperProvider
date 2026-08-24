@@ -33,7 +33,8 @@ jobs:
           cp provider/AndroidManifest.xml \
             template/sample/src/main/AndroidManifest.xml
 
-          rm -f template/sample/src/main/res/values/*.xml
+          rm -f template/sample/src/main/res/values/strings.xml
+          rm -f template/sample/src/main/res/values/integers.xml
 
           cp provider/strings.xml \
             template/sample/src/main/res/values/strings.xml
