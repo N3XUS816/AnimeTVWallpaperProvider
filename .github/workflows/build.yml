@@ -3,7 +3,9 @@ name: Build Anime TV Wallpaper Provider
 on:
   workflow_dispatch:
   push:
-    branches: [ main, master ]
+    branches:
+      - main
+      - master
 
 jobs:
   build:
@@ -14,17 +16,30 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Clone Projectivy provider template
-        run: git clone --depth 1 https://github.com/spocky/projectivy-plugin-wallpaper-provider.git template
+        run: |
+          git clone --depth 1 https://github.com/spocky/projectivy-plugin-wallpaper-provider.git template
 
       - name: Copy Anime TV provider
         run: |
           rm -rf template/sample/src/main/java/tv/projectivy/plugin/wallpaperprovider/sample/*
           mkdir -p template/sample/src/main/java/tv/projectivy/plugin/wallpaperprovider/sample
-          cp provider/WallpaperProviderService.kt template/sample/src/main/java/tv/projectivy/plugin/wallpaperprovider/sample/
-          cp provider/SettingsActivity.kt template/sample/src/main/java/tv/projectivy/plugin/wallpaperprovider/sample/
-          cp provider/AndroidManifest.xml template/sample/src/main/
-          cp provider/strings.xml template/sample/src/main/res/values/strings.xml
-          cp provider/integers.xml template/sample/src/main/res/values/integers.xml
+
+          cp provider/WallpaperProviderService.kt \
+            template/sample/src/main/java/tv/projectivy/plugin/wallpaperprovider/sample/
+
+          cp provider/SettingsActivity.kt \
+            template/sample/src/main/java/tv/projectivy/plugin/wallpaperprovider/sample/
+
+          cp provider/AndroidManifest.xml \
+            template/sample/src/main/AndroidManifest.xml
+
+          rm -f template/sample/src/main/res/values/*.xml
+
+          cp provider/strings.xml \
+            template/sample/src/main/res/values/strings.xml
+
+          cp provider/integers.xml \
+            template/sample/src/main/res/values/integers.xml
 
       - name: Build APK
         working-directory: template
