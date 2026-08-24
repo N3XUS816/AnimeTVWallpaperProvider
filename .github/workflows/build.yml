@@ -1,4 +1,4 @@
-name: Build Anime TV Wallpaper Provider
+name: Build AnimeWallpaper Provider
 
 on:
   workflow_dispatch:
@@ -15,54 +15,99 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Clone Projectivy provider template
+      - name: Clone Projectivy wallpaper provider template
         run: |
           git clone --depth 1 https://github.com/spocky/projectivy-plugin-wallpaper-provider.git template
 
-      - name: Copy Anime TV provider
+      - name: Install AnimeWallpaper provider files
         run: |
-          rm -rf template/sample/src/main/java/tv/projectivy/plugin/wallpaperprovider/sample/*
-          mkdir -p template/sample/src/main/java/tv/projectivy/plugin/wallpaperprovider/sample
+          set -e
 
-          cp provider/WallpaperProviderService.kt \
-            template/sample/src/main/java/tv/projectivy/plugin/wallpaperprovider/sample/
+          APP_SRC="template/sample/src/main"
+          PROVIDER_SRC="provider"
 
-          cp provider/SettingsActivity.kt \
-            template/sample/src/main/java/tv/projectivy/plugin/wallpaperprovider/sample/
+          rm -rf "$APP_SRC/java/tv/projectivy/plugin/wallpaperprovider/sample/"*
+          mkdir -p "$APP_SRC/java/tv/projectivy/plugin/wallpaperprovider/sample"
 
-          cp provider/AndroidManifest.xml \
-            template/sample/src/main/AndroidManifest.xml
+          cp "$PROVIDER_SRC/WallpaperProviderService.kt" \
+            "$APP_SRC/java/tv/projectivy/plugin/wallpaperprovider/sample/WallpaperProviderService.kt"
 
-      - name: Configure Projectivy resources
+          cp "$PROVIDER_SRC/SettingsActivity.kt" \
+            "$APP_SRC/java/tv/projectivy/plugin/wallpaperprovider/sample/SettingsActivity.kt"
+
+          cp "$PROVIDER_SRC/AndroidManifest.xml" \
+            "$APP_SRC/AndroidManifest.xml"
+
+      - name: Configure AnimeWallpaper resources
         working-directory: template
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import xml.etree.ElementTree as ET
 
-          strings = Path("sample/src/main/res/values/strings.xml")
-          text = strings.read_text()
+          ANDROID_NS = "http://schemas.android.com/apk/res/android"
+          ET.register_namespace("", "http://schemas.android.com/apk/res/android")
 
-          text = text.replace(
-              "Sample Wallpaper Provider",
-              "Anime TV Wallpapers"
+          def update_values(path, values):
+              path = Path(path)
+              tree = ET.parse(path)
+              root = tree.getroot()
+
+              for name, value, kind in values:
+                  found = None
+                  for child in root:
+                      if child.tag.split("}")[-1] == kind and child.attrib.get("name") == name:
+                          found = child
+                          break
+
+                  if found is None:
+                      found = ET.SubElement(root, kind, {"name": name})
+
+                  found.text = value
+
+              tree.write(path, encoding="utf-8", xml_declaration=True)
+
+          update_values(
+              "sample/src/main/res/values/strings.xml",
+              [
+                  ("plugin_name", "AnimeWallpaper", "string"),
+                  ("plugin_description",
+                   "TV-friendly anime wallpapers from r/Animewallpaper",
+                   "string"),
+                  ("plugin_uuid",
+                   "ecd5d719-49e7-4df0-b408-e31bbd9d2559",
+                   "string"),
+              ],
           )
 
-          text = text.replace(
-              "sample",
-              "anime_tv_wallpapers"
+          update_values(
+              "sample/src/main/res/values/integers.xml",
+              [
+                  ("items_cache_duration_millis", "1800000", "integer"),
+              ],
           )
-
-          strings.write_text(text)
           PY
+
+      - name: Verify provider metadata
+        working-directory: template
+        run: |
+          set -e
+          grep -q 'AnimeWallpaper' sample/src/main/res/values/strings.xml
+          grep -q 'ecd5d719-49e7-4df0-b408-e31bbd9d2559' sample/src/main/res/values/strings.xml
+          grep -q 'android:name="uuid"' sample/src/main/AndroidManifest.xml
+          grep -q 'android:name="name"' sample/src/main/AndroidManifest.xml
+          grep -q 'android:name=".WallpaperProviderService"' sample/src/main/AndroidManifest.xml
 
       - name: Build APK
         working-directory: template
         run: |
+          set -e
           chmod +x gradlew
           ./gradlew :sample:assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: AnimeTVWallpaperProvider
+          name: AnimeWallpaper
           path: template/sample/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
