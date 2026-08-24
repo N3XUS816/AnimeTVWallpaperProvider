@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <resources>
-
     <string name="plugin_name">AnimeWallpaper</string>
-
     <string name="plugin_description">TV-friendly anime wallpapers from r/Animewallpaper</string>
-
     <string name="plugin_uuid">ecd5d719-49e7-4df0-b408-e31bbd9d2559</string>
-
 </resources>
