@@ -33,14 +33,27 @@ jobs:
           cp provider/AndroidManifest.xml \
             template/sample/src/main/AndroidManifest.xml
 
-          rm -f template/sample/src/main/res/values/strings.xml
-          rm -f template/sample/src/main/res/values/integers.xml
+      - name: Configure Projectivy resources
+        working-directory: template
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
 
-          cp provider/strings.xml \
-            template/sample/src/main/res/values/strings.xml
+          strings = Path("sample/src/main/res/values/strings.xml")
+          text = strings.read_text()
 
-          cp provider/integers.xml \
-            template/sample/src/main/res/values/integers.xml
+          text = text.replace(
+              "Sample Wallpaper Provider",
+              "Anime TV Wallpapers"
+          )
+
+          text = text.replace(
+              "sample",
+              "anime_tv_wallpapers"
+          )
+
+          strings.write_text(text)
+          PY
 
       - name: Build APK
         working-directory: template
