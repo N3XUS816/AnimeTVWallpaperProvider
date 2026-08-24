@@ -1,1 +1,105 @@
+name: Build AnimeWallpaper Provider
 
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Clone official Projectivy provider template
+        run: git clone --depth 1 https://github.com/spocky/projectivy-plugin-wallpaper-provider.git template
+
+      - name: Install AnimeWallpaper provider
+        run: |
+          set -eux
+          APP="template/sample/src/main"
+          PKG="$APP/java/tv/projectivy/plugin/wallpaperprovider/sample"
+          mkdir -p "$PKG"
+          cp provider/WallpaperProviderService.kt "$PKG/WallpaperProviderService.kt"
+          cp provider/SettingsActivity.kt "$PKG/SettingsActivity.kt"
+
+          # Replace the sample manifest completely. Keep the Projectivy API untouched.
+          cat > "$APP/AndroidManifest.xml" <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET" />
+
+              <application
+                  android:allowBackup="false"
+                  android:label="AnimeWallpaper"
+                  android:supportsRtl="true">
+
+                  <activity
+                      android:name=".SettingsActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.DEFAULT" />
+                      </intent-filter>
+                  </activity>
+
+                  <service
+                      android:name=".WallpaperProviderService"
+                      android:exported="true"
+                      android:label="AnimeWallpaper">
+                      <intent-filter>
+                          <action android:name="tv.projectivy.plugin.WALLPAPER_PROVIDER" />
+                      </intent-filter>
+
+                      <meta-data
+                          android:name="apiVersion"
+                          android:value="1" />
+                      <meta-data
+                          android:name="uuid"
+                          android:value="ecd5d719-49e7-4df0-b408-e31bbd9d2559" />
+                      <meta-data
+                          android:name="name"
+                          android:value="AnimeWallpaper" />
+                      <meta-data
+                          android:name="settingsActivity"
+                          android:value=".SettingsActivity" />
+                      <meta-data
+                          android:name="itemsCacheDurationMillis"
+                          android:value="1800000" />
+                  </service>
+              </application>
+          </manifest>
+          EOF
+
+      - name: Verify provider files
+        run: |
+          set -eux
+          test -f template/sample/src/main/AndroidManifest.xml
+          test -f template/sample/src/main/java/tv/projectivy/plugin/wallpaperprovider/sample/WallpaperProviderService.kt
+          test -f template/sample/src/main/java/tv/projectivy/plugin/wallpaperprovider/sample/SettingsActivity.kt
+          grep -q 'android:name="name"' template/sample/src/main/AndroidManifest.xml
+          grep -q 'android:value="AnimeWallpaper"' template/sample/src/main/AndroidManifest.xml
+          grep -q 'ecd5d719-49e7-4df0-b408-e31bbd9d2559' template/sample/src/main/AndroidManifest.xml
+          grep -q 'tv.projectivy.plugin.WALLPAPER_PROVIDER' template/sample/src/main/AndroidManifest.xml
+
+      - name: Build APK
+        working-directory: template
+        run: |
+          set -eux
+          chmod +x gradlew
+          ./gradlew :sample:assembleDebug --no-daemon --stacktrace
+
+      - name: Verify APK exists
+        run: |
+          set -eux
+          ls -lh template/sample/build/outputs/apk/debug/
+          test -n "$(find template/sample/build/outputs/apk/debug -maxdepth 1 -name '*.apk' -print -quit)"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AnimeWallpaper
+          path: template/sample/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
